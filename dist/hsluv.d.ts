@@ -17,7 +17,7 @@ export declare class Hsluv implements Color {
         readonly h?: number;
         readonly s?: number;
         readonly l?: number;
-    }): Rgb;
+    }): Hsluv;
     toRgb(): Rgb;
     toStyle(): string;
     toString(): string;
@@ -33,7 +33,7 @@ export declare class Hpluv implements Color {
         readonly h?: number;
         readonly p?: number;
         readonly l?: number;
-    }): Rgb;
+    }): Hpluv;
     toRgb(): Rgb;
     toStyle(): string;
     toString(): string;

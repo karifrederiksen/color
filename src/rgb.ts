@@ -54,8 +54,16 @@ export class RgbLinear {
         return this.r === other.r && this.g === other.g && this.b === other.b
     }
 
-    with({ r, g, b }: { readonly r?: number; readonly g?: number; readonly b?: number }): Rgb {
-        return new Rgb(
+    with({
+        r,
+        g,
+        b,
+    }: {
+        readonly r?: number
+        readonly g?: number
+        readonly b?: number
+    }): RgbLinear {
+        return new RgbLinear(
             r !== undefined ? r : this.r,
             g !== undefined ? g : this.g,
             b !== undefined ? b : this.b,
@@ -179,5 +187,5 @@ function parseHex(hex: string): number {
 }
 
 function lerp(pct: number, from: number, to: number): number {
-    return from + pct * to
+    return from + pct * (to - from)
 }

@@ -45,8 +45,8 @@ class RgbLinear {
     is(other) {
         return this.r === other.r && this.g === other.g && this.b === other.b;
     }
-    with({ r, g, b }) {
-        return new Rgb(r !== undefined ? r : this.r, g !== undefined ? g : this.g, b !== undefined ? b : this.b);
+    with({ r, g, b, }) {
+        return new RgbLinear(r !== undefined ? r : this.r, g !== undefined ? g : this.g, b !== undefined ? b : this.b);
     }
     mix(pct, other) {
         return new RgbLinear(lerp(pct, this.r, other.r), lerp(pct, this.g, other.g), lerp(pct, this.b, other.b));
@@ -291,7 +291,7 @@ class Hsluv {
         return this.h === other.h && this.s === other.s && this.l === other.l;
     }
     with({ h, s, l }) {
-        return new Rgb(h !== undefined ? h : this.h, s !== undefined ? s : this.s, l !== undefined ? l : this.l);
+        return new Hsluv(h !== undefined ? h : this.h, s !== undefined ? s : this.s, l !== undefined ? l : this.l);
     }
     toRgb() {
         if (this.__cachedRgb === null) {
@@ -318,7 +318,7 @@ class Hpluv {
         return this.h === other.h && this.p === other.p && this.l === other.l;
     }
     with({ h, p, l }) {
-        return new Rgb(h !== undefined ? h : this.h, p !== undefined ? p : this.p, l !== undefined ? l : this.l);
+        return new Hpluv(h !== undefined ? h : this.h, p !== undefined ? p : this.p, l !== undefined ? l : this.l);
     }
     toRgb() {
         if (this.__cachedRgb === null) {

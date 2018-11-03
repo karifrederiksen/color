@@ -42,8 +42,8 @@ export class Hsluv implements Color {
         return this.h === other.h && this.s === other.s && this.l === other.l
     }
 
-    with({ h, s, l }: { readonly h?: number; readonly s?: number; readonly l?: number }): Rgb {
-        return new Rgb(
+    with({ h, s, l }: { readonly h?: number; readonly s?: number; readonly l?: number }): Hsluv {
+        return new Hsluv(
             h !== undefined ? h : this.h,
             s !== undefined ? s : this.s,
             l !== undefined ? l : this.l,
@@ -76,8 +76,8 @@ export class Hpluv implements Color {
         return this.h === other.h && this.p === other.p && this.l === other.l
     }
 
-    with({ h, p, l }: { readonly h?: number; readonly p?: number; readonly l?: number }): Rgb {
-        return new Rgb(
+    with({ h, p, l }: { readonly h?: number; readonly p?: number; readonly l?: number }): Hpluv {
+        return new Hpluv(
             h !== undefined ? h : this.h,
             p !== undefined ? p : this.p,
             l !== undefined ? l : this.l,

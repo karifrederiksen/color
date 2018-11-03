@@ -27,11 +27,11 @@ export declare class RgbLinear {
     static Black: RgbLinear;
     constructor(r: number, g: number, b: number);
     is(other: RgbLinear): boolean;
-    with({ r, g, b }: {
+    with({ r, g, b, }: {
         readonly r?: number;
         readonly g?: number;
         readonly b?: number;
-    }): Rgb;
+    }): RgbLinear;
     mix(pct: number, other: RgbLinear): RgbLinear;
     lighten(pct: number): RgbLinear;
     darken(pct: number): RgbLinear;
