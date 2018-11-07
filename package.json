@@ -18,7 +18,7 @@
     "sideEffects": false,
     "scripts": {
         "build": "npx rollup --config rollup.config.js",
-        "test": "npx mocha -r ./ts-node-test.js --watch-extensions ts,tsx \"src/**/*.test.ts\" --full-trace",
+        "test": "npx mocha -r ./ts-node-test.js -r mocha-clean --watch-extensions ts,tsx \"src/**/*.test.ts\" --full-trace",
         "typecheck": "npx tsc --project tsconfig.json --noEmit",
         "benchmark": "npx node -r ./ts-node-test.js ./benchmarks/ordmap.ts"
     },
@@ -31,6 +31,7 @@
         "io-ts": "^1.4.0",
         "jsverify": "^0.8.4",
         "mocha": "^5.2.0",
+        "mocha-clean": "^1.0.0",
         "node": "^11.0.0",
         "prettier": "^1.14.3",
         "rollup": "^0.66.6",
