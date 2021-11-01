@@ -151,7 +151,7 @@ function parseHex(hex) {
     }
 }
 function lerp(pct, from, to) {
-    return from + pct * to;
+    return from + pct * (to - from);
 }
 
 class Hsv {
@@ -381,15 +381,6 @@ function degreesToRadians(deg) {
 function radiansToDegrees(rad) {
     return (rad * 180.0) / Math.PI;
 }
-function lengthOfRayUntilIntersect(theta, vec) {
-    const length = vec.y / (Math.sin(theta) - vec.x * Math.cos(theta));
-    if (length < 0.0) {
-        return -0.0001;
-    }
-    else {
-        return length;
-    }
-}
 function getBounds(l) {
     const sub1 = Math.pow((l + 16), 3) / 1560896;
     const sub2 = sub1 > epsilon ? sub1 : l / kappa;
@@ -409,20 +400,14 @@ function getBounds(l) {
     }
     return bounds;
 }
-function distance(x, y) {
-    return Math.sqrt(x * x + y * y);
-}
-function intersectLineLine(vec1, vec2) {
-    return (vec1.y - vec2.y) / (vec2.x - vec1.x);
-}
 function maxSafeChromaForL(l) {
     const bounds = getBounds(l);
     let min = Number.MAX_VALUE;
     for (let i = 0; i < 2; ++i) {
         const line = bounds[i];
-        // TODO: inline
-        const x = intersectLineLine(line, new Vec2(-1 / line.x, 0));
-        const length = distance(x, line.y + x * line.x);
+        const x = line.y / ((-1 / line.x) - line.x);
+        const y = line.y + x * line.x;
+        const length = Math.sqrt(x * x + y * y);
         if (length < min)
             min = length;
     }
@@ -433,10 +418,11 @@ function maxChromaForLH(l, h) {
     const bounds = getBounds(l);
     let min = Number.MAX_VALUE;
     for (let i = 0; i < bounds.length; i++) {
-        // TODO: inline
-        const length = lengthOfRayUntilIntersect(hrad, bounds[i]);
-        if (length >= 0 && length < min)
+        const vec = bounds[i];
+        const length = vec.y / (Math.sin(hrad) - vec.x * Math.cos(hrad));
+        if (length >= 0 && length < min) {
             min = length;
+        }
     }
     return min;
 }
@@ -456,16 +442,8 @@ function funFInv(t) {
         return (refY * t) / kappa;
     }
 }
-function fromLinear$1(c) {
-    if (c <= 0.0031308) {
-        return 12.92 * c;
-    }
-    else {
-        return 1.055 * Math.pow(c, (1.0 / 2.4)) - 0.055;
-    }
-}
 function luvToLch({ l, u, v }) {
-    const c = distance(u, v);
+    const c = Math.sqrt(u * u + v * v);
     if (c < 0.00000001) {
         return new Lch(l, c, 0);
     }
@@ -483,19 +461,32 @@ function lchToLuv({ l, c, h }) {
     const v = Math.sin(hrad) * c;
     return new Luv(l, u, v);
 }
-function mat3map(fn, mat) {
-    return [fn(mat[0]), fn(mat[1]), fn(mat[2])];
-}
 function rgbToXyz(rgb) {
     const lrgb = rgb.toLinear();
-    // todo: unwrap map
-    const xyz = mat3map(vec => lrgb.r * vec.x + lrgb.g * vec.y + lrgb.b * vec.z, mInv);
-    return new Xyz(xyz[0], xyz[1], xyz[2]);
+    const m0 = mInv[0];
+    const m1 = mInv[1];
+    const m2 = mInv[2];
+    const x = lrgb.r * m0.x + lrgb.g * m0.y + lrgb.b * m0.z;
+    const y = lrgb.r * m1.x + lrgb.g * m1.y + lrgb.b * m1.z;
+    const z = lrgb.r * m2.x + lrgb.g * m2.y + lrgb.b * m2.z;
+    return new Xyz(x, y, z);
+}
+function fromLinear$1(c) {
+    if (c <= 0.0031308) {
+        return 12.92 * c;
+    }
+    else {
+        return 1.055 * Math.pow(c, (1.0 / 2.4)) - 0.055;
+    }
 }
 function xyzToRgb(xyz) {
-    // todo: unwrap map
-    const rgb = mat3map(vec => fromLinear$1(xyz.x * vec.x + xyz.y * vec.y + xyz.z * vec.z), m);
-    return new Rgb(rgb[0], rgb[1], rgb[2]);
+    const m0 = m[0];
+    const m1 = m[1];
+    const m2 = m[2];
+    const r = fromLinear$1(xyz.x * m0.x + xyz.y * m0.y + xyz.z * m0.z);
+    const g = fromLinear$1(xyz.x * m1.x + xyz.y * m1.y + xyz.z * m1.z);
+    const b = fromLinear$1(xyz.x * m2.x + xyz.y * m2.y + xyz.z * m2.z);
+    return new Rgb(r, g, b);
 }
 function lchToHsluv({ l, c, h }) {
     if (l > 99.9999999) {

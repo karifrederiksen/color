@@ -163,15 +163,6 @@ function radiansToDegrees(rad: number) {
     return (rad * 180.0) / Math.PI
 }
 
-function lengthOfRayUntilIntersect(theta: number, vec: Vec2) {
-    const length = vec.y / (Math.sin(theta) - vec.x * Math.cos(theta))
-    if (length < 0.0) {
-        return -0.0001
-    } else {
-        return length
-    }
-}
-
 type ZeroToTwo = 0 | 1 | 2
 
 function getBounds(l: number): ReadonlyArray<Vec2> {
@@ -188,22 +179,14 @@ function getBounds(l: number): ReadonlyArray<Vec2> {
         const m3 = m[c as ZeroToTwo].z
 
         for (let t = 0; t < 2; t++) {
-            const top1 = (284517 * m1 - 94839 * m3) * sub2
-            const top2 = (838422 * m3 + 769860 * m2 + 731718 * m1) * l * sub2 - 769860 * t * l
-            const bottom = (632260 * m3 - 126452 * m2) * sub2 + 126452 * t
+            const top1 = (284_517 * m1 - 94_839 * m3) * sub2
+            const top2 = (838_422 * m3 + 769_860 * m2 + 731_718 * m1) * l * sub2 - 769_860 * t * l
+            const bottom = (632_260 * m3 - 126_452 * m2) * sub2 + 126_452 * t
             bounds[c * 2 + t] = new Vec2(top1 / bottom, top2 / bottom)
         }
     }
 
     return bounds
-}
-
-function distance(x: number, y: number) {
-    return Math.sqrt(x * x + y * y)
-}
-
-function intersectLineLine(vec1: Vec2, vec2: Vec2) {
-    return (vec1.y - vec2.y) / (vec2.x - vec1.x)
 }
 
 function maxSafeChromaForL(l: number) {
@@ -214,10 +197,10 @@ function maxSafeChromaForL(l: number) {
     for (let i = 0; i < 2; ++i) {
         const line = bounds[i]
 
-        // TODO: inline
-        const x = intersectLineLine(line, new Vec2(-1 / line.x, 0))
+        const x = line.y / ((-1 / line.x) - line.x)
 
-        const length = distance(x, line.y + x * line.x)
+        const y = line.y + x * line.x
+        const length = Math.sqrt(x * x + y * y)
 
         if (length < min) min = length
     }
@@ -231,10 +214,12 @@ function maxChromaForLH(l: number, h: number) {
 
     let min = Number.MAX_VALUE
     for (let i = 0; i < bounds.length; i++) {
-        // TODO: inline
-        const length = lengthOfRayUntilIntersect(hrad, bounds[i])
+        const vec = bounds[i]
+        const length = vec.y / (Math.sin(hrad) - vec.x * Math.cos(hrad))
 
-        if (length >= 0 && length < min) min = length
+        if (length >= 0 && length < min) {
+            min = length
+        }
     }
     return min
 }
@@ -255,16 +240,8 @@ function funFInv(t: number) {
     }
 }
 
-function fromLinear(c: number) {
-    if (c <= 0.0031308) {
-        return 12.92 * c
-    } else {
-        return 1.055 * c ** (1.0 / 2.4) - 0.055
-    }
-}
-
 export function luvToLch({ l, u, v }: Luv): Lch {
-    const c = distance(u, v)
+    const c = Math.sqrt(u * u + v * v)
     if (c < 0.00000001) {
         return new Lch(l, c, 0)
     }
@@ -283,21 +260,33 @@ export function lchToLuv({ l, c, h }: Lch): Luv {
     return new Luv(l, u, v)
 }
 
-function mat3map<a>(fn: (x: Vec3) => a, mat: Mat3): Readonly<[a, a, a]> {
-    return [fn(mat[0]), fn(mat[1]), fn(mat[2])]
-}
-
 export function rgbToXyz(rgb: Rgb): Xyz {
     const lrgb = rgb.toLinear()
-    // todo: unwrap map
-    const xyz = mat3map(vec => lrgb.r * vec.x + lrgb.g * vec.y + lrgb.b * vec.z, mInv)
-    return new Xyz(xyz[0], xyz[1], xyz[2])
+    const m0 = mInv[0]
+    const m1 = mInv[1]
+    const m2 = mInv[2]
+    const x = lrgb.r * m0.x + lrgb.g * m0.y + lrgb.b * m0.z
+    const y = lrgb.r * m1.x + lrgb.g * m1.y + lrgb.b * m1.z
+    const z = lrgb.r * m2.x + lrgb.g * m2.y + lrgb.b * m2.z
+    return new Xyz(x, y, z)
+}
+
+function fromLinear(c: number) {
+    if (c <= 0.0031308) {
+        return 12.92 * c
+    } else {
+        return 1.055 * c ** (1.0 / 2.4) - 0.055
+    }
 }
 
 export function xyzToRgb(xyz: Xyz): Rgb {
-    // todo: unwrap map
-    const rgb = mat3map(vec => fromLinear(xyz.x * vec.x + xyz.y * vec.y + xyz.z * vec.z), m)
-    return new Rgb(rgb[0], rgb[1], rgb[2])
+    const m0 = m[0]
+    const m1 = m[1]
+    const m2 = m[2]
+    const r = fromLinear(xyz.x * m0.x + xyz.y * m0.y + xyz.z * m0.z)
+    const g = fromLinear(xyz.x * m1.x + xyz.y * m1.y + xyz.z * m1.z)
+    const b = fromLinear(xyz.x * m2.x + xyz.y * m2.y + xyz.z * m2.z)
+    return new Rgb(r, g, b)
 }
 
 export function lchToHsluv({ l, c, h }: Lch): Hsluv {
