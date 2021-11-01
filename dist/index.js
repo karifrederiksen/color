@@ -266,13 +266,6 @@ class Vec2 {
         this.y = y;
     }
 }
-class Vec3 {
-    constructor(x, y, z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-}
 class Luv {
     constructor(l, u, v) {
         this.l = l;
@@ -360,16 +353,24 @@ class Xyz {
         , 0.019330818715591, 0.11919477979462, 0.95053215224966
         ]
 */
-const m = [
-    new Vec3(3.240969941904521, -1.537383177570093, -0.498610760293),
-    new Vec3(-0.96924363628087, 1.87596750150772, 0.041555057407175),
-    new Vec3(0.055630079696993, -0.20397695888897, 1.056971514242878),
-];
-const mInv = [
-    new Vec3(0.41239079926595, 0.35758433938387, 0.18048078840183),
-    new Vec3(0.21263900587151, 0.71516867876775, 0.072192315360733),
-    new Vec3(0.019330818715591, 0.11919477979462, 0.95053215224966),
-];
+const m00 = 3.240969941904521;
+const m01 = -1.537383177570093;
+const m02 = -0.498610760293;
+const m10 = -0.96924363628087;
+const m11 = 1.87596750150772;
+const m12 = 0.041555057407175;
+const m20 = 0.055630079696993;
+const m21 = -0.20397695888897;
+const m22 = 1.056971514242878;
+const mInv00 = 0.41239079926595;
+const mInv01 = 0.35758433938387;
+const mInv02 = 0.18048078840183;
+const mInv10 = 0.21263900587151;
+const mInv11 = 0.71516867876775;
+const mInv12 = 0.072192315360733;
+const mInv20 = 0.019330818715591;
+const mInv21 = 0.11919477979462;
+const mInv22 = 0.95053215224966;
 const refY = 1.0;
 const refU = 0.19783000664283;
 const refV = 0.46831999493879;
@@ -381,23 +382,23 @@ function degreesToRadians(deg) {
 function radiansToDegrees(rad) {
     return (rad * 180.0) / Math.PI;
 }
+function bound(m1, m2, m3, l, sub2, t) {
+    const top1 = (284517 * m1 - 94839 * m3) * sub2;
+    const top2 = (838422 * m3 + 769860 * m2 + 731718 * m1) * l * sub2 - 769860 * t * l;
+    const bottom = (632260 * m3 - 126452 * m2) * sub2 + 126452 * t;
+    return new Vec2(top1 / bottom, top2 / bottom);
+}
 function getBounds(l) {
     const sub1 = Math.pow((l + 16), 3) / 1560896;
     const sub2 = sub1 > epsilon ? sub1 : l / kappa;
-    const bounds = new Array(3 * 2);
-    // TODO: unwrap loop
-    // can I also inline the matrix's values?
-    for (let c = 0; c < 3; c++) {
-        const m1 = m[c].x;
-        const m2 = m[c].y;
-        const m3 = m[c].z;
-        for (let t = 0; t < 2; t++) {
-            const top1 = (284517 * m1 - 94839 * m3) * sub2;
-            const top2 = (838422 * m3 + 769860 * m2 + 731718 * m1) * l * sub2 - 769860 * t * l;
-            const bottom = (632260 * m3 - 126452 * m2) * sub2 + 126452 * t;
-            bounds[c * 2 + t] = new Vec2(top1 / bottom, top2 / bottom);
-        }
-    }
+    const bounds = [
+        bound(m00, m01, m02, l, sub2, 0),
+        bound(m00, m01, m02, l, sub2, 1),
+        bound(m10, m11, m12, l, sub2, 0),
+        bound(m10, m11, m12, l, sub2, 1),
+        bound(m20, m21, m22, l, sub2, 0),
+        bound(m20, m21, m22, l, sub2, 1),
+    ];
     return bounds;
 }
 function maxSafeChromaForL(l) {
@@ -463,12 +464,9 @@ function lchToLuv({ l, c, h }) {
 }
 function rgbToXyz(rgb) {
     const lrgb = rgb.toLinear();
-    const m0 = mInv[0];
-    const m1 = mInv[1];
-    const m2 = mInv[2];
-    const x = lrgb.r * m0.x + lrgb.g * m0.y + lrgb.b * m0.z;
-    const y = lrgb.r * m1.x + lrgb.g * m1.y + lrgb.b * m1.z;
-    const z = lrgb.r * m2.x + lrgb.g * m2.y + lrgb.b * m2.z;
+    const x = lrgb.r * mInv00 + lrgb.g * mInv01 + lrgb.b * mInv02;
+    const y = lrgb.r * mInv10 + lrgb.g * mInv11 + lrgb.b * mInv12;
+    const z = lrgb.r * mInv20 + lrgb.g * mInv21 + lrgb.b * mInv22;
     return new Xyz(x, y, z);
 }
 function fromLinear$1(c) {
@@ -480,12 +478,9 @@ function fromLinear$1(c) {
     }
 }
 function xyzToRgb(xyz) {
-    const m0 = m[0];
-    const m1 = m[1];
-    const m2 = m[2];
-    const r = fromLinear$1(xyz.x * m0.x + xyz.y * m0.y + xyz.z * m0.z);
-    const g = fromLinear$1(xyz.x * m1.x + xyz.y * m1.y + xyz.z * m1.z);
-    const b = fromLinear$1(xyz.x * m2.x + xyz.y * m2.y + xyz.z * m2.z);
+    const r = fromLinear$1(xyz.x * m00 + xyz.y * m01 + xyz.z * m02);
+    const g = fromLinear$1(xyz.x * m10 + xyz.y * m11 + xyz.z * m12);
+    const b = fromLinear$1(xyz.x * m20 + xyz.y * m21 + xyz.z * m22);
     return new Rgb(r, g, b);
 }
 function lchToHsluv({ l, c, h }) {
